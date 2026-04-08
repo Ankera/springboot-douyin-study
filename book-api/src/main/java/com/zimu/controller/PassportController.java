@@ -1,6 +1,8 @@
 package com.zimu.controller;
 
+import com.zimu.bo.RegistLoginBO;
 import com.zimu.grace.result.GraceJSONResult;
+import com.zimu.grace.result.ResponseStatusEnum;
 import com.zimu.utils.IPUtil;
 import com.zimu.utils.SMSUtils;
 import io.swagger.annotations.Api;
@@ -11,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
 
 @Slf4j
 @Api(tags = "PassportController 通信验证接口")
@@ -50,5 +53,22 @@ public class PassportController extends BaseInfoProperties {
         redis.set(MOBILE_SMSCODE + ":" + mobile, code, 30 * 60);
 
         return GraceJSONResult.ok("验证码发送成功");
+    }
+
+    @PostMapping("login")
+    @ApiOperation("验证码登录接口")
+    public GraceJSONResult login(@Valid @RequestBody RegistLoginBO registLoginBO,
+//                                 BindingResult result,    // 对代码有侵入性
+                                 HttpServletRequest request) throws Exception {
+        String mobile = registLoginBO.getMobile();
+        String code = registLoginBO.getSmsCode();
+
+        // 1. 从redis中获得验证码进行校验是否匹配
+        String redisCode = redis.get(MOBILE_SMSCODE + ":" + mobile);
+        if (StringUtils.isBlank(redisCode) || !redisCode.equalsIgnoreCase(code)) {
+            return GraceJSONResult.errorCustom(ResponseStatusEnum.SMS_CODE_ERROR);
+        }
+
+        return GraceJSONResult.ok("登录成功");
     }
 }
