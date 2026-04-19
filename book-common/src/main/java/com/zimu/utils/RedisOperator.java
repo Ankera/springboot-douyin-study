@@ -135,8 +135,8 @@ public class RedisOperator {
     /**
      * 实现命令：SET key value EX seconds，设置key-value和超时时间（秒）
      *
-     * @param key
-     * @param value
+     * @param key key
+     * @param value value
      * @param timeout
      *            （以秒为单位）
      */

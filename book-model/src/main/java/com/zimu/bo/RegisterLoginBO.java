@@ -12,7 +12,7 @@ import javax.validation.constraints.NotBlank;
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
-public class RegistLoginBO {
+public class RegisterLoginBO {
 
     @NotBlank(message = "手机号不能为空")
     @Length(min = 11, max = 11, message = "手机长度不正确")
