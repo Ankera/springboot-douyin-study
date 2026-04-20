@@ -14,15 +14,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.validation.BindingResult;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -107,5 +102,16 @@ public class PassportController extends BaseInfoProperties {
         usersVO.setUserToken(uToken);
 
         return GraceJSONResult.ok(usersVO);
+    }
+
+    @PostMapping("logout")
+    @ApiOperation("退出登录")
+    public GraceJSONResult logout(@RequestParam String userId,
+                                  HttpServletRequest request) throws Exception {
+
+        // 后端只需要清除用户的token信息即可，前端也需要清除，清除本地app中的用户信息和token会话信息
+        redis.del(REDIS_USER_TOKEN + ":" + userId);
+
+        return GraceJSONResult.ok();
     }
 }
