@@ -1,10 +1,14 @@
 package com.zimu.controller;
 
+import com.zimu.MinIOConfig;
 import com.zimu.bo.UpdatedUserBO;
+import com.zimu.enums.FileTypeEnum;
 import com.zimu.enums.UserInfoModifyType;
 import com.zimu.grace.result.GraceJSONResult;
+import com.zimu.grace.result.ResponseStatusEnum;
 import com.zimu.pojo.Users;
 import com.zimu.service.UserService;
+import com.zimu.utils.MinIOUtils;
 import com.zimu.vo.UsersVO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -13,6 +17,9 @@ import org.junit.platform.commons.util.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Objects;
 
 @Slf4j
 @Api(tags = "UserInfoController 用户信息接口模块")
@@ -22,6 +29,9 @@ public class UserInfoController extends BaseInfoProperties {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private MinIOConfig minIOConfig;
 
     @GetMapping("query")
     @ApiOperation("查询用户信息")
@@ -74,6 +84,42 @@ public class UserInfoController extends BaseInfoProperties {
         UserInfoModifyType.checkUserInfoTypeIsRight(type);
 
         Users users = userService.updateUserInfo(updatedUserBO, type);
+
+        return GraceJSONResult.ok(users);
+    }
+
+    @PostMapping("modifyImage")
+    @ApiOperation("修改头像")
+    public GraceJSONResult modifyImage(@RequestParam String userId,
+                                       @RequestParam Integer type,
+                                       @RequestPart("file") MultipartFile file) throws Exception {
+        if (!Objects.equals(type, FileTypeEnum.BGIMG.type) && !Objects.equals(type, FileTypeEnum.FACE.type)) {
+            return GraceJSONResult.errorCustom(ResponseStatusEnum.FILE_UPLOAD_FAILD);
+        }
+
+        String fileName = file.getOriginalFilename();
+
+        MinIOUtils.uploadFile(minIOConfig.getBucketName(),
+                fileName,
+                file.getInputStream());
+
+        String imgUrl = minIOConfig.getFileHost()
+                + "/"
+                + minIOConfig.getBucketName()
+                + "/"
+                + fileName;
+        log.info("上传的文件地址=>" + imgUrl);
+
+        // 修改图片地址到数据库
+        UpdatedUserBO updatedUserBO = new UpdatedUserBO();
+        updatedUserBO.setId(userId);
+
+        if (Objects.equals(type, FileTypeEnum.BGIMG.type)) {
+            updatedUserBO.setBgImg(imgUrl);
+        } else {
+            updatedUserBO.setFace(imgUrl);
+        }
+        Users users = userService.updateUserInfo(updatedUserBO);
 
         return GraceJSONResult.ok(users);
     }
